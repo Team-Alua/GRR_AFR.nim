@@ -10,3 +10,4 @@ srcDir        = "src"
 # Dependencies
 
 requires "nim >= 1.9.1"
+requires "GoldHENPlugin >= 0.1.0"
