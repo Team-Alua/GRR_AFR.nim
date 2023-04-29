@@ -1,28 +1,30 @@
 import endians 
 import strutils
-import hash_lookup
-import tables
-import md5
 import GoldHENPlugin
+import os
+import streams
 
 let g_pluginName* {.exportc, dynlib.}: cstring  = "Gravity Rush AFR"
 let g_pluginDesc* {.exportc, dynlib.}: cstring  = "This does a basic AFR for GRR"
 let g_pluginAuth* {.exportc, dynlib.}: cstring  = "Team-Alua"
 
-type FiosReadResult = object
-  unk1: uint64
-  unk2: array[0x18, byte]
-  size: uint64
+type LuaExecCode = proc(luaState: pointer, code:pointer, codeLength: uint64, filepath: cstring) : cint {.cdecl.}
 
-type LuaExecCode = proc(luaState: pointer, code:cstring, codeLength: uint64, filepath: cstring) : cint {.cdecl.}
+var luaExec {.exportc.}: LuaExecCode 
+var titleId : string
 
-var luaExec: LuaExecCode
-
-
-proc luaExec_hook(luaState: pointer, code: cstring, codeLength: uint64, filepath: cstring): cint {.cdecl.} =
-  echo "Code Length:", codeLength, " filepath: ", filepath 
-  luaExec(luaState, code, codeLength, filepath)
-
+proc luaExec_hook(luaState:pointer, code: pointer, codeLength: uint64, filepath: cstring): cint {.cdecl.} = 
+  var luaFilePath = toLowerAscii($filepath)
+  var targetFilePath = joinPath("/data", titleId, luaFilePath)
+  var fileStream = newFileStream(targetFilePath)
+  if fileStream.isNil:
+    return luaExec(luaState, code, codeLength, filepath)
+  var userCode = fileStream.readAll() 
+  var res = luaExec(luaState, userCode.cstring, userCode.len.uint64, filepath)
+  if res != 0:
+    echo "Failed to execute: ", targetFilePath
+    return luaExec(luaState, code, codeLength, filepath)
+  return res
 
 proc performPatch(processInfo: ProcessInfo, offset: uint64, patch: openArray[byte]) : cint =
   var patchAddress = processInfo.baseAddress + offset
@@ -62,6 +64,7 @@ proc module_start(argc : int64, args: pointer): int32 {.exportc, cdecl.} =
   if processInfo.titleId != "CUSA01130":
     echo "Unsupported process"
     return -1
+  titleId = processInfo.titleId
 
   if createCallPatches(processInfo) != 0:
     return -1

@@ -5,6 +5,7 @@ switch "app", "lib"
 switch "noMain", "on"
 switch "nimcache", "./cache"
 switch "threads", "off"
+switch "stackTrace", "off"
 
 proc getOOBinaryPath(binName: string): string =
   var osDir: string
