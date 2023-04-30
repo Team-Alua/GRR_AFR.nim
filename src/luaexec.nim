@@ -18,13 +18,12 @@ proc createCallPatches(processInfo: ProcessInfo): cint {.cdecl.} =
 type LuaExecCode = proc(luaState: pointer, code:pointer, codeLength: uint64, filepath: cstring) : cint {.cdecl.}
 
 var luaExec : LuaExecCode 
-var titleId : string
 
 
 
 proc luaExec_hook(luaState:pointer, code: pointer, codeLength: uint64, filepath: cstring): cint {.cdecl.} = 
   var luaFilePath = toLowerAscii($filepath)
-  var targetFilePath = joinPath("/data", titleId, luaFilePath)
+  var targetFilePath = joinPath("/data", "GRR", luaFilePath)
   var fileStream = newFileStream(targetFilePath)
   echo "(LuaExec) Path: ", filepath
   if fileStream.isNil:
@@ -38,11 +37,6 @@ proc luaExec_hook(luaState:pointer, code: pointer, codeLength: uint64, filepath:
   return res
 
 proc setup*(processInfo: ProcessInfo) : cint {.cdecl.} = 
-
-  if processInfo.titleId != "CUSA01130":
-    echo "Unsupported process"
-    return -1
-  titleId = processInfo.titleId
   if createCallPatches(processInfo) != 0:
     return -1
   luaExec = cast[LuaExecCode](processInfo.baseAddress + 0x00d5ce20)

@@ -8,17 +8,41 @@ let g_pluginDesc* {.exportc, dynlib.}: cstring  = "This does a basic AFR for GRR
 let g_pluginAuth* {.exportc, dynlib.}: cstring  = "Team-Alua"
 
 
+const SUPPORTED_TITLE_IDS = [
+    "PCJS50004",
+    "CUSA00546",
+    "PCJS50008",
+    "PCAS00035",
+    "CUSA01112",
+    "CUSA01130",
+    "CUSA01130",
+    "CUSA01113",
+    "CUSA01113",
+    "CUSA01113",
+    "CUSA02318",
+    "PCJS66015"
+]
+
+proc isSupportedTitleId(cTitleId: string) : bool =
+  for titleId in SUPPORTED_TITLE_IDS:
+    if titleId == cTitleId:
+      return true
+  return false
 proc module_start(argc : int64, args: pointer): int32 {.exportc, cdecl.} =
   var processInfo = getProcessInfo()
 
   if processInfo.isNil:
     echo "Failed to get process info"
     return -1
+  if not isSupportedTitleId(processInfo.titleId):
+    echo "Title Id ", processInfo.titleId , " not supported."
+    return -1
 
   let setupFuncs = [
     leh.setup,
     carc.setup
   ];
+
   for setupFunc in setupFuncs:
     let res =  setupFunc(processInfo)
     if res != 0:

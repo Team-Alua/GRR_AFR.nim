@@ -2,7 +2,6 @@ import os
 import GoldHENPlugin
 import utils
 import endians
-import nre
 import strutils
 
 const CUSTOM_ARC_BITOFFSET = 0x5
@@ -12,7 +11,6 @@ const MAX_PSARCS = CUSTOM_ARC_BITOFFSET + (MAX_EPISODE_COUNT - 1) - MIN_EPISODE_
 
 type MountArcDecl = proc(filePath : cstring) : cint {.cdecl.}
 var mountArc: MountArcDecl
-var titleId : string
 
 proc createEpisodeToArcBitOffsetTable(processInfo: ProcessInfo, lookupTableOffset: uint64): cint {.cdecl.} = 
   var newLookupTable : array[MAX_EPISODE_COUNT, byte]
@@ -137,7 +135,7 @@ proc loadArc_hook(fileName: cstring) {.cdecl.} =
     return
 
   var overrideFileName = "arc" & episodeNumber & ".psarc" 
-  targetPath = joinPath("/data/", titleId, "arc", overrideFileName)
+  targetPath = joinPath("/data/", "GRR", "arc", overrideFileName)
   echo "Looking for...", targetPath
   if fileExists(targetPath):
     echo $fileName, " => ", targetPath
@@ -156,6 +154,5 @@ proc setup*(processInfo: ProcessInfo): cint {.cdecl.} =
   if createThunkFunction(processInfo, freeFuncAddress, cast[uint64](loadArcHook)) != 0:
     return -1
   mountArc = cast[MountArcDecl](processInfo.baseAddress + 0x001ed860)
-  titleId = processInfo.titleId
   return 0
 
