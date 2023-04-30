@@ -9,18 +9,15 @@ let g_pluginAuth* {.exportc, dynlib.}: cstring  = "Team-Alua"
 
 
 const SUPPORTED_TITLE_IDS = [
-    "PCJS50004",
-    "CUSA00546",
-    "PCJS50008",
     "PCAS00035",
+    "PCJS50004",
+    "PCJS50008",
+    "PCJS66015",
+    "CUSA00546",
     "CUSA01112",
+    "CUSA01113",
     "CUSA01130",
-    "CUSA01130",
-    "CUSA01113",
-    "CUSA01113",
-    "CUSA01113",
     "CUSA02318",
-    "PCJS66015"
 ]
 
 proc isSupportedTitleId(cTitleId: string) : bool =
