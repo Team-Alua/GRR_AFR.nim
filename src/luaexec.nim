@@ -37,12 +37,7 @@ proc luaExec_hook(luaState:pointer, code: pointer, codeLength: uint64, filepath:
     return luaExec(luaState, code, codeLength, filepath)
   return res
 
-proc setup*() : cint {.cdecl.} = 
-  var processInfo = getProcessInfo()
-
-  if processInfo.isNil:
-    echo "Failed to get process info"
-    return -1
+proc setup*(processInfo: ProcessInfo) : cint {.cdecl.} = 
 
   if processInfo.titleId != "CUSA01130":
     echo "Unsupported process"
