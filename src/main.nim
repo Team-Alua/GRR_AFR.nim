@@ -1,81 +1,19 @@
-import endians 
-import strutils
-import GoldHENPlugin
-import os
-import streams
-
+import "luaexec" as leh
+import "customarc" as carc
 let g_pluginName* {.exportc, dynlib.}: cstring  = "Gravity Rush AFR"
 let g_pluginDesc* {.exportc, dynlib.}: cstring  = "This does a basic AFR for GRR"
 let g_pluginAuth* {.exportc, dynlib.}: cstring  = "Team-Alua"
 
-type LuaExecCode = proc(luaState: pointer, code:pointer, codeLength: uint64, filepath: cstring) : cint {.cdecl.}
-
-var luaExec {.exportc.}: LuaExecCode 
-var titleId : string
-
-proc luaExec_hook(luaState:pointer, code: pointer, codeLength: uint64, filepath: cstring): cint {.cdecl.} = 
-  var luaFilePath = toLowerAscii($filepath)
-  var targetFilePath = joinPath("/data", titleId, luaFilePath)
-  var fileStream = newFileStream(targetFilePath)
-  if fileStream.isNil:
-    return luaExec(luaState, code, codeLength, filepath)
-  var userCode = fileStream.readAll() 
-  var res = luaExec(luaState, userCode.cstring, userCode.len.uint64, filepath)
-  if res != 0:
-    echo "Failed to execute: ", targetFilePath
-    return luaExec(luaState, code, codeLength, filepath)
-  return res
-
-proc performPatch(processInfo: ProcessInfo, offset: uint64, patch: openArray[byte]) : cint =
-  var patchAddress = processInfo.baseAddress + offset
-  if writeMemory(processInfo, offset, patch) != 0:
-    echo "Failed to patch memory at " , toHex(patchAddress)
-    return -1
-  return 0
-
-proc createCallPatches(processInfo: ProcessInfo): cint {.cdecl.} = 
-  # Ordered by call address. Least to greatest address
-  discard performPatch(processInfo, 0x001f471c, [byte(0xE8), 0xDF, 0x01, 0xE1, 0xFF])
-  discard performPatch(processInfo, 0x001f47c3, [byte(0xE9), 0x38, 0x01, 0xE1, 0xFF])
-  discard performPatch(processInfo, 0x001f49f1, [byte(0xE8), 0x0A, 0xFF, 0xE0, 0xFF])
-  discard performPatch(processInfo, 0x001f4aa3, [byte(0xE9), 0x58, 0xFE, 0xE0, 0xFF])
-  discard performPatch(processInfo, 0x00d717c7, [byte(0xE8), 0x34, 0x31, 0x29, 0xFF])
-  discard performPatch(processInfo, 0x00d748bf, [byte(0xE8), 0x3C, 0x00, 0x29, 0xFF])
-  return 0
-
-proc createThunkFunction(processInfo: ProcessInfo, unusedFuncAddress: uint64, jumpAddress: uint64): cint {.cdecl.} =
-  var arbitraryJumpPatch = [
-        byte(0xFF), 0x25, 0x00, 0x00, 0x00, 0x00, # jmp qword ptr [$+6]
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 # ptr
-  ]
-  littleEndian64(arbitraryJumpPatch[6].addr, jumpAddress.addr)
-  if writeMemory(processInfo, unusedFuncAddress, arbitraryJumpPatch) != 0:
-    echo "Failed to patch memory"
-    return -1
-  return 0
 
 proc module_start(argc : int64, args: pointer): int32 {.exportc, cdecl.} =
-  var processInfo = getProcessInfo()
-
-  if processInfo.isNil:
-    echo "Failed to get process info"
-    return -1
-
-  if processInfo.titleId != "CUSA01130":
-    echo "Unsupported process"
-    return -1
-  titleId = processInfo.titleId
-
-  if createCallPatches(processInfo) != 0:
-    return -1
-
-  luaExec = cast[LuaExecCode](processInfo.baseAddress + 0x00d5ce20)
-
-  var freeFuncAddress: uint64 = 0x4900
-  if createThunkFunction(processInfo, freeFuncAddress, cast[uint64](luaExec_hook)) != 0:
-    return -1
-
-  echo "Successfully applied patches"
+  let setupFuncs = [
+    leh.setup,
+    carc.setup
+  ];
+  for setupFunc in setupFuncs:
+    let res =  setupFunc()
+    if res != 0:
+      return res
   return 0
 
 proc module_stop(argc : int64, args: pointer): int32 {.exportc, cdecl.} =
