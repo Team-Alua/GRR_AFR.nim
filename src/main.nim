@@ -1,8 +1,7 @@
 import GoldHENPlugin
 
-import "luaexec" as leh
 import "customarc" as carc
-
+import "afr" as cafr
 let g_pluginName* {.exportc, dynlib.}: cstring  = "Gravity Rush AFR"
 let g_pluginDesc* {.exportc, dynlib.}: cstring  = "This does a basic AFR for GRR"
 let g_pluginAuth* {.exportc, dynlib.}: cstring  = "Team-Alua"
@@ -36,8 +35,9 @@ proc module_start(argc : int64, args: pointer): int32 {.exportc, cdecl.} =
     return -1
 
   let setupFuncs = [
-    leh.setup,
-    carc.setup
+#    leh.setup,
+#    carc.setup,
+    cafr.setup,
   ];
 
   for setupFunc in setupFuncs:

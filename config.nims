@@ -1,5 +1,6 @@
 import std/strutils
 import os
+--os:orbis
 switch "o", "grr_afr.elf"
 switch "app", "lib"
 switch "noMain", "on"
