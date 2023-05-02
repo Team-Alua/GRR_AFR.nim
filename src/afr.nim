@@ -1,7 +1,6 @@
 import GoldHENPlugin
 import endians
 import utils
-import strutils
 import posix
 
 type FiosFindAbsPathDecl = proc(foundPath: ptr array[256, char], relativePath: cstring, fileType: cint) : cint {.cdecl.} 

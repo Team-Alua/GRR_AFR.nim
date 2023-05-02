@@ -1,6 +1,5 @@
 import GoldHENPlugin
 
-import "customarc" as carc
 import "afr" as cafr
 let g_pluginName* {.exportc, dynlib.}: cstring  = "Gravity Rush AFR"
 let g_pluginDesc* {.exportc, dynlib.}: cstring  = "This does a basic AFR for GRR"
@@ -24,6 +23,7 @@ proc isSupportedTitleId(cTitleId: string) : bool =
     if titleId == cTitleId:
       return true
   return false
+
 proc module_start(argc : int64, args: pointer): int32 {.exportc, cdecl.} =
   var processInfo = getProcessInfo()
 
